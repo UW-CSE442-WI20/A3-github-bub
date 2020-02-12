@@ -1,4 +1,10 @@
-body {
+#title {
     font-family: 'Playfair Display', serif;
-    font-weight: 900;
+    font-weight: 800;
+    text-align: left;
+}
+
+svg {
+    display: block;
+    margin: auto;
 }
