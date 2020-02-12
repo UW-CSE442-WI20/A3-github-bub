@@ -30,6 +30,11 @@ const sqLabelSize = 12
 const sqPltWidth = sqPad + (sqDim + sqPad) * (sqN + 11)  // 11 is no. months
 const sqPltHeight = sqPad + sqLabelSize + sqPad + (sqDim + sqPad) * sqM
 
+var selectBoxX = -1;
+var selectBoxY = -1;
+var inSelect = false;
+
+
 function title() {
     d3
     .select('#title')
@@ -51,6 +56,77 @@ function squareplot() {
         .attr('width', sqPltWidth)
         .attr('height', sqPltHeight);
 
+    d3.select('#squareplot')
+        .on('mouseclick', function() {
+
+        })
+        .on('mousedown', function() {
+            // clear all selected boxes
+            d3.selectAll('.selected')
+                .classed('selected', false)
+                .transition()
+                .duration(sqZoomInDur)
+                .attr('x', d => squareXPos(d))
+                .attr('y', d => squareYPos(d))
+                .attr('width', sqDim)
+                .attr('height', sqDim)
+                .style('stroke', 'none');
+
+            // start selection
+            inSelect = true;
+            var coords = d3.mouse(this);
+            selectBoxX = coords[0];
+            selectBoxY = coords[1];
+        }).on('mousemove', function() {
+            // if not in selection
+            if(!inSelect) {
+                return;
+            }
+
+            var coords = d3.mouse(this);
+            var curX = coords[0];
+            var curY = coords[1];
+
+            d3.selectAll('svg>rect').each(function(d, i) {
+                // if in boundaries
+                if(squareXPos(d) <= Math.max(selectBoxX, curX) && Math.min(curX, selectBoxX) <= squareXPos(d) + sqDim &&
+                        squareYPos(d) <= Math.max(selectBoxY, curY) && Math.min(curY, selectBoxY) <=  squareYPos(d) + sqDim) {
+                    // already selected
+                    if (d3.select(this).classed('selected')) {
+                        return;
+                    }
+
+                    // not yet selected, select it
+
+                    d3.select(this).moveToFront()
+                        .transition()
+                        .duration(sqZoomOutDur)
+                        .attr('x', squareXPos(d) + sqDim / 8)
+                        .attr('y', squareYPos(d) + sqDim / 8)
+                        .attr('width', sqDim * 3 / 4)
+                        .attr('height', sqDim * 3 / 4)
+                        .style('stroke', 'gray')
+                        .style('stroke-weight', sqDim / 4 + "px")
+                        .style('style-dasharray', '5, 5');
+                    d3.select(this).classed('selected', true);
+                } else {
+                    // deselect it
+                    d3.select(this).transition()
+                        .duration(sqZoomInDur)
+                        .attr('x', squareXPos(d))
+                        .attr('y', squareYPos(d))
+                        .attr('width', sqDim)
+                        .attr('height', sqDim)
+                        .style('stroke', 'none');
+                    d3.select(this).classed('selected', false);
+                }
+            });
+
+        }).on('mouseup', function() {
+            inSelect = false;
+            console.log(d3.selectAll('.selected'));
+        });
+
     // squares
     plt
         .selectAll('rect')
@@ -62,10 +138,13 @@ function squareplot() {
         .attr('width', sqDim)
         .attr('height', sqDim)
         .attr('fill', d => squareFill(d))
-        .on('click', d => console.log(d))
-        .on('mouseover', handleMouseOver)
-        .on('mouseout', handleMouseOut);
-    
+        .on('click', function(d) {
+            console.log(d);
+        })
+        // .on('mouseover', handleMouseOver)
+        // .on('mouseout', handleMouseOut)
+
+
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
     // month labels
@@ -81,6 +160,7 @@ function squareplot() {
         .attr('font-weight', 300)
         .attr('font-size', '12pt')
         .attr('fill', 'lightgray')
+        .style('user-select', 'none');
 }
 
 function squareXPos(d) {
@@ -92,7 +172,7 @@ function squareYPos(d) {
 }
 
 function squareFill(d) {
-    const cmin = [256, 256, 256]
+    const cmin = [230, 230, 230]
     const cmax = [229, 57, 53]
 
     // red channel data map
@@ -119,32 +199,32 @@ function squareFill(d) {
     return `rgb(${r}, ${g}, ${b})`;
 }
 
-d3.selection.prototype.moveToFront = function() {  
+d3.selection.prototype.moveToFront = function() {
     return this.each(function(){
       this.parentNode.appendChild(this);
     });
 };
 
-function handleMouseOver(d) {
-    d3.select(this)
-        .moveToFront()
-        .transition()
-        .duration(sqZoomInDur)
-        .attr('x', squareXPos(d) - sqDim / 2)
-        .attr('y', squareYPos(d) - sqDim / 2)
-        .attr('width', sqDim * 2)
-        .attr('height', sqDim * 2);
-}
+// function handleMouseOver(d) {
+//     d3.select(this)
+//         .moveToFront()
+//         .transition()
+//         .duration(sqZoomInDur)
+//         .attr('x', squareXPos(d) - sqDim / 2)
+//         .attr('y', squareYPos(d) - sqDim / 2)
+//         .attr('width', sqDim * 2)
+//         .attr('height', sqDim * 2);
+// }
 
-function handleMouseOut(d) {
-    d3.select(this)
-        .transition()
-        .duration(sqZoomOutDur)
-        .attr('x', squareXPos(d))
-        .attr('y', squareYPos(d))
-        .attr('width', sqDim)
-        .attr('height', sqDim);
-}
+// function handleMouseOut(d) {
+//     d3.select(this)
+//         .transition()
+//         .duration(sqZoomOutDur)
+//         .attr('x', squareXPos(d))
+//         .attr('y', squareYPos(d))
+//         .attr('width', sqDim)
+//         .attr('height', sqDim);
+// }
 
 // line plot svg dimensions
 const lnPltWidth = sqPltWidth
@@ -180,3 +260,4 @@ function lineplot() {
             .x(d => x(d[1] * 7 + d[2]))
             .y(d => y(d[3])));
 }
+
