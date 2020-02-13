@@ -1,0 +1,126 @@
+#title,.statsTitle, #scatterTitle {
+    text-align: left;
+    margin: 0 auto;
+}
+
+#title>h1 {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 700;
+    font-size: 32pt;
+    margin-bottom: 0rem;
+}
+
+#title>p {
+    font-family: 'IBM Plex Serif', serif;
+    font-weight: 400;
+    font-style: italic;
+    font-size: 20pt;
+    margin-top: 0rem;
+    margin-bottom: 10pt;
+}
+
+.statsTitle>h2, #scatterTitle>h2 {
+    font-family: 'IBM Plex Serif', serif;
+    font-weight: 700;
+    font-size: 12pt;
+    margin-top: 0rem;
+    margin-bottom: 5pt;
+}
+
+#squareplot, #scatterplot{
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 40px;
+}
+
+#squareplot text, #scatterplot text {
+    font-family: 'IBM Plex Serif', serif;
+    font-weight: 200;
+    fill-opacity: 0.7;
+    user-select: none;
+}
+
+#squareplot>.daylabel {
+    font-style: italic;
+    pointer-events: none;
+}
+
+#sqpltcaption {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#sqpltcaption p {
+    font-family: 'IBM Plex Serif', serif;
+    font-weight: 400;
+    font-size: 12pt;
+    margin-top: 0rem;
+    margin-bottom: 40px;
+}
+
+#eventcountstats {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 40px;
+}
+
+#eventcountstats text {
+    user-select: none;
+}
+
+#org_label,#ind_label {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 700;
+}
+
+#org_evt_ct,#ind_evt_ct {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 400;
+}
+
+#org_pct,#ind_pct {
+    font-family: 'IBM Plex Serif', serif;
+    font-weight: 400;
+}
+
+#repostats,#userstats {
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 40px;
+}
+
+#repostats>a,#repostats>a:visited,#userstats>a,#userstats>a:visited {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 400;
+    font-style: italic;
+    font-size: 24pt;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 0;
+    text-decoration: none;
+    color: black;
+}
+
+#repostats>p,#userstats>p {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 400;
+    margin-top: 0;
+}
+
+#footer {
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 40px;
+}
+
+#footer>a,#footer>a:visited,#footer>a:hover {
+    font-family: 'IBM Plex Serif', serif;
+    font-weight: 700;
+    font-style: italic;
+    margin-left: auto;
+    margin-right: auto;
+    text-decoration: none;
+    color: black;
+}

@@ -1,0 +1,49 @@
+Andriy Sheptunov, Neil Jurling
+
+Source
+GitHub Archive at https://www.gharchive.org/
+Specific queries are in the queries/ directory, and are run against the full dataset in BigQuery.
+
+Rationale
+Since the dataset is extremely large (3.5+ TB) and is very granular (has 1+M timestamped events per
+day over the span of nearly a decade), we had to narrow it down to a very specific timeframe and list
+of attributes to examine. One of our first thoughts was to analyze the major organizations on GitHub,
+i.e. display a list of top organizations, and then drill down to see top repos per organization, and
+then top users per repo (by some statistic). This proved to be very unrealistic due to the amount of
+data that needed to be processed and stored in real time. In fact, we couldn't actually display any
+ordinal statistics (i.e. top 5 users per timeframe), as there would be too much data to store and
+process (on the order of the cross product of ordinal cardinality and time range). Thus, we focused
+on strictly numerical data like event count, push count, repo watch count, etc. We were able to roughly
+approximate the statistics we were going for, namely Top User and Top Repo for any given time range,
+by finding the entry with the highest contribution metric in any given day of the timeframe, rather
+than across the whole timeframe.
+
+As mentioned, the key interactive aspect of the visualization is time selection through the square
+plot. The reason we chose this type of plot is because it adds a day-of-week dimension to the data,
+so you can compare GitHub activity across days of the week (column selections), as well as activity
+on the same day, across different weeks (row selections). The visuals for this display are inspired
+by GitHub's actual contribution graph, which shows up on each user's profile. We implemented a multi
+box (brush) selection tool to be able to highlight disjoint data, e.g. across different months, or
+to combine all Saturdays and all Sundays, which is impossible to do with single box selection. The
+selection (days) is cross-selected on the scatterplot below, and defines the domain for the summary
+statistics below the scatterplot.
+
+We chose the three summary statistics shown below the scatterplot mainly for how interesting they (the
+users and repos) are. Since we're finding users/repos that "trend" the most for single days rather
+than across all days, we get interesting, spontaneous results, i.e. users and repos we've never heard
+of, but were popular at their peak.
+
+One thing we wished to add was box (brush) selection using the scatterplot as well, since this feels
+intuitive.
+
+Development Process.
+We started by brainstorming and writing out some of the key statistics and types of visualizations
+we'd like to use. This list evolved as we kept developing and encountered time or difficulty constraints.
+Andriy worked on the visual encoding for the square plot, as well as the summary statistics. Neil worked
+on the selection / boxing component, and implemented cross-selection with the scatterplot. We spent a
+considerable amount of time pair programming to sort out the details of the visuals, especially the
+square plot and box plot.
+
+We spent upwards of 20-30 hours each on this project. The square plot was the most time consuming,
+as we used it to learn how to use d3, and used it as the primary medium for interaction. We implemented
+boxing (brushing) without using the existing d3 brush library, which made things hard.
