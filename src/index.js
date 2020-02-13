@@ -112,65 +112,7 @@ function squareplot() {
         .attr('width', sqPltWidth)
         .attr('height', sqPltHeight);
 
-    d3.select('#squareplot')
-        .on('mousedown', function() {
-            // clear all selected boxes
-            clearBoxSelection();
-            redrawScatterPlot();
-            // start selection
-            inSelect = true;
-            var coords = d3.mouse(this);
-            selectBoxX = coords[0];
-            selectBoxY = coords[1];
-        }).on('mousemove', function() {
-            // if not in selection
-            if(!inSelect) {
-                return;
-            }
-
-            var coords = d3.mouse(this);
-            var curX = coords[0];
-            var curY = coords[1];
-
-            d3.selectAll('svg>rect').each(function(d, i) {
-                // if in boundaries
-                if(squareXPos(d) <= Math.max(selectBoxX, curX) && Math.min(curX, selectBoxX) <= squareXPos(d) + sqDim &&
-                        squareYPos(d) <= Math.max(selectBoxY, curY) && Math.min(curY, selectBoxY) <=  squareYPos(d) + sqDim) {
-                    // already selected
-                    if (d3.select(this).classed('selected')) {
-                        return;
-                    }
-
-                    // not yet selected, select it
-
-                    d3.select(this).moveToFront()
-                        .transition()
-                        .duration(sqZoomOutDur)
-                        .attr('x', squareXPos(d) + sqDim / 8)
-                        .attr('y', squareYPos(d) + sqDim / 8)
-                        .attr('width', sqDim * 3 / 4)
-                        .attr('height', sqDim * 3 / 4)
-                        .style('stroke', 'orange')
-                        .style('stroke-weight', sqDim / 4 + "px")
-                        .style('style-dasharray', '5, 5');
-                    d3.select(this).classed('selected', true);
-                } else {
-                    // deselect it
-                    d3.select(this).transition()
-                        .duration(sqZoomInDur)
-                        .attr('x', squareXPos(d))
-                        .attr('y', squareYPos(d))
-                        .attr('width', sqDim)
-                        .attr('height', sqDim)
-                        .style('stroke', 'none');
-                    d3.select(this).classed('selected', false);
-                }
-            });
-            highlightSelectedScatterPlot();
-
-        }).on('mouseup', function() {
-            inSelect = false;
-        });
+    addEvents();
 
     plt
         .append('text')
@@ -248,6 +190,75 @@ function squareplot() {
         .attr('fill', d => d)
 }
 
+function addEvents() {
+    d3.select('#squareplot')
+    .on('mousedown', function() {
+        if (!d3.event.shiftKey) {
+            // clear all selected boxes
+            clearBoxSelection();
+            redrawScatterPlot();
+        }
+
+        // start selection
+        inSelect = true;
+        var coords = d3.mouse(this);
+        selectBoxX = coords[0];
+        selectBoxY = coords[1];
+    }).on('mousemove', function() {
+        // if not in selection
+        if(!inSelect) {
+            return;
+        }
+
+        var coords = d3.mouse(this);
+        var curX = coords[0];
+        var curY = coords[1];
+
+        d3.selectAll('svg>rect').each(function(d, i) {
+            // if in boundaries
+            if (d3.select(this).classed('selected')) {
+                return;
+            }
+            if(squareXPos(d) <= Math.max(selectBoxX, curX) && Math.min(curX, selectBoxX) <= squareXPos(d) + sqDim &&
+                    squareYPos(d) <= Math.max(selectBoxY, curY) && Math.min(curY, selectBoxY) <=  squareYPos(d) + sqDim) {
+                // already selected
+                if (d3.select(this).classed('selecting')) {
+                    return;
+                }
+
+                // not yet selected, select it
+
+                d3.select(this).moveToFront()
+                    .transition()
+                    .duration(sqZoomOutDur)
+                    .attr('x', squareXPos(d) + sqDim / 8)
+                    .attr('y', squareYPos(d) + sqDim / 8)
+                    .attr('width', sqDim * 3 / 4)
+                    .attr('height', sqDim * 3 / 4)
+                    .style('stroke', 'orange')
+                    .style('stroke-weight', sqDim / 4 + "px")
+                    .style('style-dasharray', '5, 5');
+                d3.select(this).classed('selecting', true);
+            } else {
+                // deselect it
+                d3.select(this).transition()
+                    .duration(sqZoomInDur)
+                    .attr('x', squareXPos(d))
+                    .attr('y', squareYPos(d))
+                    .attr('width', sqDim)
+                    .attr('height', sqDim)
+                    .style('stroke', 'none');
+                d3.select(this).classed('selecting', false);
+            }
+        });
+        highlightSelectedScatterPlot();
+
+    }).on('mouseup', function() {
+        d3.selectAll('.selecting').classed('selected', true).classed('selecting', false);
+        inSelect = false;
+    });
+}
+
 function highlightSelectedScatterPlot() {
     d3.selectAll('g circle')
         .transition()
@@ -257,7 +268,8 @@ function highlightSelectedScatterPlot() {
 }
 
 function checkIfCircleSelected(d, i) {
-    return squares._groups[0][i].className.baseVal == 'selected';
+    return squares._groups[0][i].className.baseVal == 'selected' ||
+        squares._groups[0][i].className.baseVal == 'selecting';
 }
 
 function squareXPos(d) {
