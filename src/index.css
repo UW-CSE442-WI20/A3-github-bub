@@ -1,4 +1,4 @@
-#title,.statsTitle {
+#title,.statsTitle, #scatterTitle {
     text-align: left;
     margin: 0 auto;
 }
@@ -16,9 +16,10 @@
     font-style: italic;
     font-size: 20pt;
     margin-top: 0rem;
+    margin-bottom: 10pt;
 }
 
-.statsTitle>h2 {
+.statsTitle>h2, #scatterTitle>h2 {
     font-family: 'IBM Plex Serif', serif;
     font-weight: 700;
     font-size: 12pt;
@@ -26,14 +27,14 @@
     margin-bottom: 5pt;
 }
 
-#squareplot {
+#squareplot, #scatterplot{
     display: block;
     margin-left: auto;
     margin-right: auto;
-    margin-bottom: 20px;
+    margin-bottom: 40px;
 }
 
-#squareplot text {
+#squareplot text, #scatterplot text {
     font-family: 'IBM Plex Serif', serif;
     font-weight: 200;
     fill-opacity: 0.7;
@@ -55,13 +56,14 @@
     font-weight: 400;
     font-size: 12pt;
     margin-top: 0rem;
+    margin-bottom: 40px;
 }
 
 #eventcountstats {
     display: block;
     margin-left: auto;
     margin-right: auto;
-    margin-bottom: 20px;
+    margin-bottom: 40px;
 }
 
 #eventcountstats text {
@@ -86,6 +88,7 @@
 #repostats,#userstats {
     margin-left: auto;
     margin-right: auto;
+    margin-bottom: 40px;
 }
 
 #repostats>a,#repostats>a:visited,#userstats>a,#userstats>a:visited {
@@ -106,6 +109,18 @@
     margin-top: 0;
 }
 
-hr {
-    border: 1px solid lightgray;
+#footer {
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 40px;
+}
+
+#footer>a,#footer>a:visited,#footer>a:hover {
+    font-family: 'IBM Plex Serif', serif;
+    font-weight: 700;
+    font-style: italic;
+    margin-left: auto;
+    margin-right: auto;
+    text-decoration: none;
+    color: black;
 }
