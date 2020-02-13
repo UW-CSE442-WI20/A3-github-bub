@@ -654,7 +654,7 @@ let maxRepoCtGlob, maxRepoGlob;
 function repoStats() {
 
     maxRepoCtGlob = d3.max(sqDataset, d => d[10]);
-    maxRepoGlob = sqDataset[d3.maxIndex(sqDataset, d => d[10])][12];
+    maxRepoGlob = sqDataset[sqindexof(sqDataset, maxRepoCtGlob, 10)][12];
 
     let div = d3
         .select('body')
@@ -698,7 +698,7 @@ let maxUserCtGlob, maxUserGlob;
 function userStats() {
 
     maxUserCtGlob = d3.max(sqDataset, d => d[11]);
-    maxUserGlob = sqDataset[d3.maxIndex(sqDataset, d => d[11])][13];
+    maxUserGlob = sqDataset[sqindexof(sqDataset, maxUserCtGlob, 11)][13];
 
     let div = d3
         .select('body')
