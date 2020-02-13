@@ -1,19 +1,26 @@
 const d3 = require('d3');
-const events_per_day_2019 = require('../queries/events_per_day_2019_sorted_day.csv');
+const events_per_day_2019 = require('../queries/events_per_day_2019_org_union_sorted_day.csv');
 
 let sqDataset = [];
 
 let lnDataset = sqDataset;
 
 d3.csv(events_per_day_2019, d => {
-    sqDataset.push([+d.day_of_year, +d.week_, +d.day_of_week, +d.event_count, +d.month_, +d.day_of_month, +d.quarter_, +d.year_]);
+    sqDataset.push([+d.day_of_year, +d.week_, +d.day_of_week, +d.event_count, +d.month_, +d.day_of_month, +d.quarter_, +d.year_, +d.org_ct, +d.ind_ct]);
 }).then(d => {
+    // preprocessing
     getSqStats();
     getLnStats();
+
     title();
+
     squareplot();
     sqPltCaption();
-    scatterplot();
+
+    // scatterplot();
+
+    statsTitle();
+    eventCountStats();
 });
 
 let sqMinEvtCt, sqMaxEvtCt;
@@ -87,8 +94,20 @@ function sqPltCaption() {
         .text('Total GitHub event counts are plotted over the past year, \
         with darker colors indicating more events. Click and drag on squares \
         to select time ranges. Shift-click to combine selections. Click anywhere \
-        on the graphic to reset the selection.')
+        on the graphic to reset the selection. Summary statistics will update \
+        below, according to the selected time range.')
+}
 
+function statsTitle() {
+    title = d3
+        .select('body')
+        .append('div')
+        .attr('id', 'statsTitle')
+
+    title
+        .style('width', sqPltWidth * 3 / 4 + 'px')
+        .append('h2')
+        .text('Org-Owned Vs. Individual Repo Events')
 }
 
 function clearBoxSelection() {
@@ -214,7 +233,7 @@ function addEvents() {
         var curX = coords[0];
         var curY = coords[1];
 
-        d3.selectAll('svg>rect').each(function(d, i) {
+        d3.selectAll('#squareplot>rect').each(function(d, i) {
             // if in boundaries
             if (d3.select(this).classed('selected')) {
                 return;
@@ -256,6 +275,7 @@ function addEvents() {
     }).on('mouseup', function() {
         d3.selectAll('.selecting').classed('selected', true).classed('selecting', false);
         inSelect = false;
+        redrawEventCountStats();
     });
 }
 
@@ -364,3 +384,183 @@ function redrawScatterPlot() {
             .attr('r', cirSize)
             .style('fill', sqFillColors[4]);
 }
+
+let barWidth, barHeight;
+let barDuration = 400;
+let barEase = d3.easeExp
+
+const barLabelPad = 12
+const barLabelSize = 12
+
+let org_pct, ind_pct;
+let org_ct, ind_ct;
+
+let tot_glob_ct, org_glob_ct, ind_glob_ct
+
+function eventCountStats() {
+
+    tot_glob_ct = d3.mean(sqDataset, d => d[3])
+    org_glob_ct = d3.mean(sqDataset, d => d[8])
+    ind_glob_ct = d3.mean(sqDataset, d => d[9])
+
+    barWidth = sqPltWidth * 3 / 4;
+    barHeight = barLabelPad + 2 * (barLabelSize + barLabelPad);
+
+    let svg = d3
+        .select('body')
+        .append('svg')
+        .attr('id', 'eventcountstats')
+        .attr('width', barWidth)
+        .attr('height', barHeight);
+
+    let midpoint = barWidth / 2;
+
+    svg
+        .append('rect')
+        .attr('id', 'org_rect')
+        .attr('x', 0)
+        .attr('y', 0)
+        .attr('width', midpoint)
+        .attr('height', barHeight)
+        .attr('fill', '#305da1');
+
+    svg
+        .append('rect')
+        .attr('id', 'ind_rect')
+        .attr('x', midpoint)
+        .attr('y', 0)
+        .attr('width', barWidth - midpoint)
+        .attr('height', barHeight)
+        .attr('fill', sqFillColors[2]);
+
+    svg
+        .append('text')
+        .attr('id', 'org_label')
+        .attr('x', barLabelPad)
+        .attr('y', barLabelPad + barLabelSize)
+        .attr('fill', 'white')
+        .text('ORG')
+        .style('font-size', barLabelSize + 'pt');
+    svg
+        .append('text')
+        .attr('id', 'ind_label')
+        .attr('x', barWidth - barLabelPad)
+        .attr('y', barLabelPad + barLabelSize)
+        .attr('text-anchor', 'end')
+        .attr('fill', 'white')
+        .text('IND')
+        .style('font-size', barLabelSize + 'pt');
+
+    org_pct = 50;
+    svg.append('text')
+        .attr('id', 'org_pct')
+        .attr('x', midpoint - barLabelPad)
+        .attr('y', barHeight - barLabelPad)
+        .attr('text-anchor', 'end')
+        .attr('fill', 'white')
+        .text(org_pct.toFixed(0))
+        .style('font-size', 2 * barLabelSize + barLabelPad + 'pt');
+
+    ind_pct = 50;
+    svg.append('text')
+        .attr('id', 'ind_pct')
+        .attr('x', midpoint + barLabelPad)
+        .attr('y', barHeight - barLabelPad)
+        .attr('fill', 'white')
+        .text(ind_pct.toFixed(0) + '%')
+        .style('font-size', 2 * barLabelSize + barLabelPad + 'pt');
+
+    org_ct = 0
+    svg
+        .append('text')
+        .attr('id', 'org_evt_ct')
+        .attr('x', barLabelPad)
+        .attr('y', barHeight - barLabelPad)
+        .attr('fill', 'white')
+        .text(org_ct)
+        .style('font-size', barLabelSize + 'pt');
+    ind_ct = 0
+    svg
+        .append('text')
+        .attr('id', 'ind_evt_ct')
+        .attr('x', barWidth - barLabelPad)
+        .attr('y', barHeight - barLabelPad)
+        .attr('text-anchor', 'end')
+        .attr('fill', 'white')
+        .text(ind_ct)
+        .style('font-size', barLabelSize + 'pt');
+
+    redrawEventCountStats();
+}
+
+function redrawEventCountStats() {
+
+    let total, org, ind;
+
+    if (d3.selectAll('.selected')._groups[0].length == 0) {
+        // global average
+        total = tot_glob_ct;
+        org = org_glob_ct;
+        ind = ind_glob_ct;
+    } else {
+        // selected average
+        total = d3.mean(d3.selectAll('.selected').data(), d => d[3])
+        org = d3.mean(d3.selectAll('.selected').data(), d => d[8])
+        ind = d3.mean(d3.selectAll('.selected').data(), d => d[9])
+    }
+
+    let midpoint = barWidth * org / total;
+    org_pct_new = org / total * 100;
+    ind_pct_new = ind / total * 100;
+
+    d3.select('#org_rect')
+        .transition()
+        .duration(barDuration)
+        .ease(barEase)
+        .attr('width', midpoint)
+    
+    d3.select('#ind_rect')
+        .transition()
+        .duration(barDuration)
+        .ease(barEase)
+        .attr('x', midpoint)
+        .attr('width', barWidth - midpoint)
+
+    d3.select('#org_pct')
+        .transition()
+        .duration(barDuration)
+        .ease(barEase)
+        .textTween(() => {
+            const i = d3.interpolate(org_pct, org_pct_new);
+            return t => { return `${(org_pct = i(t)).toFixed(0)}`; }
+        })
+        .attr('x', midpoint - barLabelPad);
+    d3.select('#ind_pct')
+        .transition()
+        .duration(barDuration)
+        .ease(barEase)
+        .textTween(() => {
+            const i = d3.interpolate(ind_pct, ind_pct_new);
+            return t => { return `${(ind_pct = i(t)).toFixed(0)}`; }
+        })
+        .attr('x', midpoint + barLabelPad);
+
+    d3.select('#org_evt_ct')
+        .transition()
+        .duration(barDuration)
+        .ease(barEase)
+        .textTween(() => {
+            const i = d3.interpolate(org_ct, org);
+            return t => { return `${format(org_ct = i(t))}`; }
+        })
+    d3.select('#ind_evt_ct')
+        .transition()
+        .duration(barDuration)
+        .ease(barEase)
+        .textTween(() => {
+            const i = d3.interpolate(ind_ct, ind);
+            return t => { return `${format(ind_ct = i(t))}`; }
+        })
+}
+
+format = d3.format(".3s")

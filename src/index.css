@@ -1,4 +1,4 @@
-#title {
+#title,#statsTitle {
     text-align: left;
     margin: 0 auto;
 }
@@ -18,7 +18,15 @@
     margin-top: 0rem;
 }
 
-svg {
+#statsTitle>h2 {
+    font-family: 'IBM Plex Serif', serif;
+    font-weight: 400;
+    font-size: 20pt;
+    margin-top: 0rem;
+    margin-bottom: 10pt;
+}
+
+#squareplot {
     display: block;
     margin-left: auto;
     margin-right: auto;
@@ -47,4 +55,29 @@ svg {
     font-weight: 400;
     font-size: 12pt;
     margin-top: 0rem;
+}
+
+#eventcountstats {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#eventcountstats text {
+    user-select: none;
+}
+
+#org_label,#ind_label {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 700;
+}
+
+#org_evt_ct,#ind_evt_ct {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 400;
+}
+
+#org_pct,#ind_pct {
+    font-family: 'IBM Plex Serif', serif;
+    font-weight: 400;
 }
