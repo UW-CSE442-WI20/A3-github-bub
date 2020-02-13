@@ -13,11 +13,11 @@ d3.csv(events_per_day_2019, d => {
     getLnStats();
 
     title();
-
-    squareplot();
     sqPltCaption();
 
-    // scatterplot();
+    squareplot();
+    scatterTitle();
+    scatterplot();
 
     statsTitle();
     eventCountStats();
@@ -98,6 +98,15 @@ function sqPltCaption() {
         below, according to the selected time range.')
 }
 
+function scatterTitle() {
+    title = d3.select('body')
+        .append('div')
+        .attr('id', 'scatterTitle')
+        .style('width', sqPltWidth * 3 / 4 + 'px')
+        .append('h2')
+        .text('Total Events Per Day in 2019')
+}
+
 function statsTitle() {
     title = d3
         .select('body')
@@ -107,7 +116,7 @@ function statsTitle() {
     title
         .style('width', sqPltWidth * 3 / 4 + 'px')
         .append('h2')
-        .text('Org-Owned Vs. Individual Repo Events')
+        .text('Org-Owned vs. Individually-Owned Repo Events')
 }
 
 function clearBoxSelection() {
@@ -197,7 +206,7 @@ function squareplot() {
         .append('text')
         .text('more events')
         .attr('x', 2 * sqPad + 5 * (sqDim + sqPad) + sqPad)
-    
+
     legend.selectAll('rect')
         .data(sqFillColors)
         .enter()
@@ -323,7 +332,7 @@ function dayOfMonthLabel(d) {
     return `${months[d[4] - 1]} ${d[5]}${(d[5] % 10 == 0) || (d[5] >= 11) && (d[5] <= 19) ? 'th' : daySuffix[Math.min(3, d[5] % 10 - 1)]} ${d[7]}`;
 }
 
-d3.selection.prototype.moveToFront = function() {  
+d3.selection.prototype.moveToFront = function() {
     return this.each(function(){
       this.parentNode.appendChild(this);
     });
@@ -342,20 +351,21 @@ function getLnStats() {
     lnMaxDay = d3.max(lnDataset, d => d[0]);
 
     // line plot svg dimensions
+    lnPltAxisSize = 60;
     lnPltWidth = sqPltWidth;
-    lnPltHeight = sqPltHeight / 2;
+    lnPltHeight = sqPltHeight + lnPltAxisSize;
 
     lnPltPad = sqPad;
 
     // x axis data map
     lnXMap = d3.scaleLinear()
         .domain([lnMinDay, lnMaxDay])
-        .range([0 + lnPltPad, lnPltWidth - lnPltPad]);
+        .range([0 + lnPltPad + lnPltAxisSize, lnPltWidth - lnPltPad]);
 
     // y axis data map
     lnYMap = d3.scaleLinear()
         .domain([d3.min(lnDataset, d => d[3]), d3.max(lnDataset, d => d[3])])
-        .range([lnPltHeight - lnPltPad, 0 + lnPltPad]);
+        .range([lnPltHeight - lnPltPad - lnPltAxisSize, 0 + lnPltPad]);
 }
 
 function scatterplot() {
@@ -365,8 +375,35 @@ function scatterplot() {
         .attr('width', lnPltWidth)
         .attr('height', lnPltHeight)
         .attr('align', 'center')
+        .attr('id', 'scatterplot')
         .append('g')
         .attr('id', 'scatter');
+
+    let xScale = d3.scaleTime()
+        .domain([new Date(new Date(lnDataset[0][7], 0).setDate(lnMinDay)), new Date(new Date(lnDataset[0][7],0).setDate(lnMaxDay))])
+        .range([0 + lnPltPad + lnPltAxisSize, lnPltWidth - lnPltPad]);
+
+    let yScale = d3.scaleLinear()
+        .domain([d3.min(lnDataset, d=> (d[3])), d3.max(lnDataset, d => (d[3]))])
+        .range([lnPltHeight - lnPltPad - lnPltAxisSize, 0 + lnPltPad]);
+
+    d3.select('#scatterplot')
+        .append('g')
+        .attr('transform', `translate(0, ${lnPltHeight - lnPltAxisSize})`)
+        .call(
+            d3.axisBottom()
+                .scale(xScale)
+                .tickFormat(d3.timeFormat("%b"))
+        );
+
+    d3.select('#scatterplot')
+        .append('g')
+        .attr('transform', `translate(${lnPltAxisSize}, 0)`)
+        .call(
+            d3.axisLeft()
+                .scale(yScale)
+                .tickFormat(format)
+        );
 
     redrawScatterPlot();
 }
@@ -387,15 +424,17 @@ function redrawScatterPlot() {
 
 let barWidth, barHeight;
 let barDuration = 400;
-let barEase = d3.easeExp
+let barEase = d3.easeExp;
 
-const barLabelPad = 12
-const barLabelSize = 12
+const barLabelPad = 12;
+const barLabelSize = 12;
+const barPctLabelSize = 10;
 
 let org_pct, ind_pct;
 let org_ct, ind_ct;
+let org_change_pct, ind_change_pct;
 
-let tot_glob_ct, org_glob_ct, ind_glob_ct
+let tot_glob_ct, org_glob_ct, ind_glob_ct;
 
 function eventCountStats() {
 
@@ -470,16 +509,18 @@ function eventCountStats() {
         .text(ind_pct.toFixed(0) + '%')
         .style('font-size', 2 * barLabelSize + barLabelPad + 'pt');
 
-    org_ct = 0
+    org_ct = 0;
+    org_change_pct = 0;
     svg
-        .append('text')
+    .append('text')
         .attr('id', 'org_evt_ct')
         .attr('x', barLabelPad)
         .attr('y', barHeight - barLabelPad)
         .attr('fill', 'white')
         .text(org_ct)
-        .style('font-size', barLabelSize + 'pt');
-    ind_ct = 0
+        .style('font-size', barPctLabelSize + 'pt');
+    ind_ct = 0;
+    ind_change_pct = 0;
     svg
         .append('text')
         .attr('id', 'ind_evt_ct')
@@ -488,7 +529,7 @@ function eventCountStats() {
         .attr('text-anchor', 'end')
         .attr('fill', 'white')
         .text(ind_ct)
-        .style('font-size', barLabelSize + 'pt');
+        .style('font-size', barPctLabelSize + 'pt');
 
     redrawEventCountStats();
 }
@@ -496,7 +537,6 @@ function eventCountStats() {
 function redrawEventCountStats() {
 
     let total, org, ind;
-
     if (d3.selectAll('.selected')._groups[0].length == 0) {
         // global average
         total = tot_glob_ct;
@@ -507,7 +547,11 @@ function redrawEventCountStats() {
         total = d3.mean(d3.selectAll('.selected').data(), d => d[3])
         org = d3.mean(d3.selectAll('.selected').data(), d => d[8])
         ind = d3.mean(d3.selectAll('.selected').data(), d => d[9])
+
     }
+    // percent change from global average
+    org_change_pct_new = (org - org_glob_ct) / org_glob_ct * 100;
+    ind_change_pct_new = (ind - ind_glob_ct) / ind_glob_ct * 100;
 
     let midpoint = barWidth * org / total;
     org_pct_new = org / total * 100;
@@ -518,7 +562,7 @@ function redrawEventCountStats() {
         .duration(barDuration)
         .ease(barEase)
         .attr('width', midpoint)
-    
+
     d3.select('#ind_rect')
         .transition()
         .duration(barDuration)
@@ -551,7 +595,8 @@ function redrawEventCountStats() {
         .ease(barEase)
         .textTween(() => {
             const i = d3.interpolate(org_ct, org);
-            return t => { return `${format(org_ct = i(t))}`; }
+            const j = d3.interpolate(org_change_pct, org_change_pct_new);
+            return t => { return `${format(org_ct = i(t))} (${(j(t) > 0 ? '+' : '') + (org_change_pct = j(t)).toFixed(1)}%)`; }
         })
     d3.select('#ind_evt_ct')
         .transition()
@@ -559,7 +604,8 @@ function redrawEventCountStats() {
         .ease(barEase)
         .textTween(() => {
             const i = d3.interpolate(ind_ct, ind);
-            return t => { return `${format(ind_ct = i(t))}`; }
+            const j = d3.interpolate(ind_change_pct, ind_change_pct_new)
+            return t => { return `(${(j(t) > 0 ? '+' : '') + (ind_change_pct = j(t)).toFixed(1)}%) ${format(ind_ct = i(t))}`; }
         })
 }
 

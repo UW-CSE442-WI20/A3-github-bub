@@ -1,4 +1,4 @@
-#title,#statsTitle {
+#title,#statsTitle, #scatterTitle {
     text-align: left;
     margin: 0 auto;
 }
@@ -16,9 +16,10 @@
     font-style: italic;
     font-size: 20pt;
     margin-top: 0rem;
+    margin-bottom: 10pt;
 }
 
-#statsTitle>h2 {
+#statsTitle>h2, #scatterTitle>h2 {
     font-family: 'IBM Plex Serif', serif;
     font-weight: 400;
     font-size: 20pt;
@@ -26,12 +27,13 @@
     margin-bottom: 10pt;
 }
 
-#squareplot {
+#squareplot, #scatterplot{
     display: block;
     margin-left: auto;
     margin-right: auto;
-    margin-bottom: 20px;
+    margin-bottom: 40px;
 }
+
 
 #squareplot text {
     font-family: 'IBM Plex Serif', serif;
@@ -55,6 +57,7 @@
     font-weight: 400;
     font-size: 12pt;
     margin-top: 0rem;
+    margin-bottom: 40px;
 }
 
 #eventcountstats {
