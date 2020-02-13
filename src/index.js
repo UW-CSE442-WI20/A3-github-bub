@@ -12,7 +12,8 @@ d3.csv(events_per_day_2019, d => {
     getLnStats();
     title();
     squareplot();
-    lineplot();
+    sqPltCaption();
+    scatterplot();
 });
 
 let sqMinEvtCt, sqMaxEvtCt;
@@ -24,6 +25,11 @@ let sqN, sqM;
 let sqZoomInDur, sqZoomOutDur;
 let sqLabelSize;
 let sqPltWidth, sqPltHeight;
+
+let sqFillExp = 2;
+let sqFillColors = ['#ebedf0', '#c6e48b', '#7bc96f', '#239a3b', '#196127'];
+
+let squares;
 
 function getSqStats() {
 
@@ -42,7 +48,11 @@ function getSqStats() {
     sqM = 7
     // square size transition timings
     sqZoomInDur = 100  // ms
-    sqZoomOutDur = sqZoomInDur
+    sqZoomOutDur = 100
+    // circle transition timings
+    cirZoomInDur = 50
+    cirSize = 1.5
+    cirZoomSize = 2.5
     // label properties
     sqLabelSize = sqDim
     sqLabelFadeInDur = 200
@@ -51,6 +61,7 @@ function getSqStats() {
     // square plot svg dimensions
     sqPltWidth = sqPad + 3 * sqLabelSize + sqPad + (sqDim + sqPad) * (sqN + sqMaxMonth - sqMinMonth + 1);  // 11 is no. months
     sqPltHeight = sqPad + sqLabelSize + sqPad + (sqDim + sqPad) * sqM + sqPad + sqLabelSize + sqPad;
+
 }
 
 var selectBoxX = -1;
@@ -64,6 +75,34 @@ function title() {
     .style('width', sqPltWidth * 3 / 4 + 'px')
 }
 
+function sqPltCaption() {
+    caption = d3
+        .select('body')
+        .append('div')
+        .attr('id', 'sqpltcaption')
+
+    caption
+        .style('width', sqPltWidth * 3 / 4 + 'px')
+        .append('p')
+        .text('Total GitHub event counts are plotted over the past year, \
+        with darker colors indicating more events. Click and drag on squares \
+        to select time ranges. Shift-click to combine selections. Click anywhere \
+        on the graphic to reset the selection.')
+
+}
+
+function clearBoxSelection() {
+    d3.selectAll('.selected')
+                .classed('selected', false)
+                .transition()
+                .duration(sqZoomInDur)
+                .attr('x', d => squareXPos(d))
+                .attr('y', d => squareYPos(d))
+                .attr('width', sqDim)
+                .attr('height', sqDim)
+                .style('stroke', 'none');
+}
+
 function squareplot() {
 
     let plt = d3
@@ -74,21 +113,10 @@ function squareplot() {
         .attr('height', sqPltHeight);
 
     d3.select('#squareplot')
-        .on('mouseclick', function() {
-
-        })
         .on('mousedown', function() {
             // clear all selected boxes
-            d3.selectAll('.selected')
-                .classed('selected', false)
-                .transition()
-                .duration(sqZoomInDur)
-                .attr('x', d => squareXPos(d))
-                .attr('y', d => squareYPos(d))
-                .attr('width', sqDim)
-                .attr('height', sqDim)
-                .style('stroke', 'none');
-
+            clearBoxSelection();
+            redrawScatterPlot();
             // start selection
             inSelect = true;
             var coords = d3.mouse(this);
@@ -122,7 +150,7 @@ function squareplot() {
                         .attr('y', squareYPos(d) + sqDim / 8)
                         .attr('width', sqDim * 3 / 4)
                         .attr('height', sqDim * 3 / 4)
-                        .style('stroke', 'gray')
+                        .style('stroke', 'orange')
                         .style('stroke-weight', sqDim / 4 + "px")
                         .style('style-dasharray', '5, 5');
                     d3.select(this).classed('selected', true);
@@ -138,6 +166,7 @@ function squareplot() {
                     d3.select(this).classed('selected', false);
                 }
             });
+            highlightSelectedScatterPlot();
 
         }).on('mouseup', function() {
             inSelect = false;
@@ -150,7 +179,7 @@ function squareplot() {
         .attr('y', sqPltHeight - sqPad)
 
     // squares
-    plt.selectAll('rect')
+    squares = plt.selectAll('rect')
         .data(sqDataset)
         .enter()
         .append('rect')
@@ -183,13 +212,52 @@ function squareplot() {
         .text(d => sqMonthLabel(d))
         .attr('x', d => squareXPos(d))
         .attr('y', sqLabelSize);
-   
+
+    // day labels
     plt
         .append('text').text('Mon').attr('x', sqPad).attr('y', sqLabelSize + squareYPos([0, 0, 2, 0, 0, 0, 0, 0]));
     plt
         .append('text').text('Wed').attr('x', sqPad).attr('y', sqLabelSize + squareYPos([0, 0, 4, 0, 0, 0, 0, 0]));
     plt
         .append('text').text('Fri').attr('x', sqPad).attr('y', sqLabelSize + squareYPos([0, 0, 6, 0, 0, 0, 0, 0]));
+
+
+    legend = plt.append('g')
+        .attr('transform', `translate(${sqPltWidth * 6 / 8}, ${sqPltHeight - sqPad})`)
+
+    // legend
+    legend
+        .append('text')
+        .text('less events')
+        .attr('x', -2 * sqPad)
+        .attr('text-anchor', 'end');
+
+    legend
+        .append('text')
+        .text('more events')
+        .attr('x', 2 * sqPad + 5 * (sqDim + sqPad) + sqPad)
+    
+    legend.selectAll('rect')
+        .data(sqFillColors)
+        .enter()
+        .append('rect')
+        .attr('x', (d, i) => sqPad + i * (sqDim + sqPad))
+        .attr('y', -sqLabelSize)
+        .attr('width', sqDim)
+        .attr('height', sqDim)
+        .attr('fill', d => d)
+}
+
+function highlightSelectedScatterPlot() {
+    d3.selectAll('g circle')
+        .transition()
+        .duration(cirZoomInDur)
+        .style('fill', (d, i) => checkIfCircleSelected(d, i) ? "orange": sqFillColors[4])
+        .attr('r', (d, i) => checkIfCircleSelected(d, i) ? cirZoomSize: cirSize);
+}
+
+function checkIfCircleSelected(d, i) {
+    return squares._groups[0][i].className.baseVal == 'selected';
 }
 
 function squareXPos(d) {
@@ -201,34 +269,13 @@ function squareYPos(d) {
 }
 
 function squareFill(d) {
-    const cmin = [230, 230, 230]
-    const cmax = [13, 71, 161]
 
-    // red channel data map
-    const sqRFillScale = d3
-        .scalePow()
-        .exponent(5)
-        .domain([sqMinEvtCt, sqMaxEvtCt])
-        .range([cmin[0], cmax[0]]);
+    const sqFillScale = d3
+        .scaleQuantize()
+        .domain([sqMinEvtCt ** sqFillExp, sqMaxEvtCt ** sqFillExp])
+        .range(sqFillColors);
 
-    // green channel data map
-    const sqGFillScale = d3
-        .scalePow()
-        .exponent(5)
-        .domain([sqMinEvtCt, sqMaxEvtCt])
-        .range([cmin[1], cmax[1]]);
-
-    // blue channel data map
-    const sqBFillScale = d3
-        .scalePow()
-        .exponent(5)
-        .domain([sqMinEvtCt, sqMaxEvtCt])
-        .range([cmin[2], cmax[2]]);
-
-    let r = Math.round(sqRFillScale(d[3]));
-    let g = Math.round(sqGFillScale(d[3]));
-    let b = Math.round(sqBFillScale(d[3]));
-    return `rgb(${r}, ${g}, ${b})`;
+    return sqFillScale(d[3] ** sqFillExp)
 }
 
 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -255,45 +302,53 @@ let lnMinDay, lnMaxDay;
 let lnPltWidth, lnPltHeight;
 let lnPltPad;
 
+let lnXMap, lnYMap;
+
 function getLnStats() {
 
     lnMinDay = d3.min(lnDataset, d => d[0]);
     lnMaxDay = d3.max(lnDataset, d => d[0]);
 
     // line plot svg dimensions
-    lnPltWidth = sqPltWidth
-    lnPltHeight = sqPltHeight / 3
+    lnPltWidth = sqPltWidth;
+    lnPltHeight = sqPltHeight / 2;
 
-    lnPltPad = sqPad
-}
-
-function lineplot() {
-
-    let plt = d3
-        .select('body')
-        .append('svg')
-        .attr('width', lnPltWidth)
-        .attr('height', lnPltHeight)
-        .attr('align', 'center');
+    lnPltPad = sqPad;
 
     // x axis data map
-    let x = d3.scaleLinear()
+    lnXMap = d3.scaleLinear()
         .domain([lnMinDay, lnMaxDay])
         .range([0 + lnPltPad, lnPltWidth - lnPltPad]);
 
     // y axis data map
-    let y = d3.scaleLinear()
+    lnYMap = d3.scaleLinear()
         .domain([d3.min(lnDataset, d => d[3]), d3.max(lnDataset, d => d[3])])
         .range([lnPltHeight - lnPltPad, 0 + lnPltPad]);
+}
 
-    plt
-        // .append('g')
-        .selectAll('circle')
+function scatterplot() {
+    // make svg
+    d3.select('body')
+        .append('svg')
+        .attr('width', lnPltWidth)
+        .attr('height', lnPltHeight)
+        .attr('align', 'center')
+        .append('g')
+        .attr('id', 'scatter');
+
+    redrawScatterPlot();
+}
+
+function redrawScatterPlot() {
+    // scatter plot
+    d3.selectAll("#scatter circle").remove();
+    d3.selectAll('#scatter')
+        .selectAll('dot')
         .data(lnDataset)
         .enter()
         .append('circle')
-        .attr('cx', d => x(d[0]))
-        .attr('cy', d => y(d[3]))
-        .attr('r', 1.5)
-        .style('fill', 'steelblue')
+            .attr('cx', d => lnXMap(d[0]))
+            .attr('cy', d => lnYMap(d[3]))
+            .attr('r', cirSize)
+            .style('fill', sqFillColors[4]);
 }
