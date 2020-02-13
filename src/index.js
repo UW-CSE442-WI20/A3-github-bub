@@ -12,7 +12,7 @@ d3.csv(events_per_day_2019, d => {
     getLnStats();
     title();
     squareplot();
-    lineplot();
+    scatterplot();
 });
 
 let sqMinEvtCt, sqMaxEvtCt;
@@ -24,6 +24,8 @@ let sqN, sqM;
 let sqZoomInDur, sqZoomOutDur;
 let sqLabelSize;
 let sqPltWidth, sqPltHeight;
+
+let squares;
 
 function getSqStats() {
 
@@ -48,6 +50,10 @@ function getSqStats() {
     // square size transition timings
     sqZoomInDur = 100  // ms
     sqZoomOutDur = sqZoomInDur
+    // circle transition timings
+    cirZoomInDur = sqZoomInDur
+    cirSize = 1.5
+    cirZoomSize = 2.5
     // label properties
     sqLabelSize = sqDim
     // square plot svg dimensions
@@ -66,6 +72,18 @@ function title() {
     .style('width', sqPltWidth + 'px')
 }
 
+function clearBoxSelection() {
+    d3.selectAll('.selected')
+                .classed('selected', false)
+                .transition()
+                .duration(sqZoomInDur)
+                .attr('x', d => squareXPos(d))
+                .attr('y', d => squareYPos(d))
+                .attr('width', sqDim)
+                .attr('height', sqDim)
+                .style('stroke', 'none');
+}
+
 function squareplot() {
 
     let plt = d3
@@ -76,21 +94,10 @@ function squareplot() {
         .attr('height', sqPltHeight);
 
     d3.select('#squareplot')
-        .on('mouseclick', function() {
-
-        })
         .on('mousedown', function() {
             // clear all selected boxes
-            d3.selectAll('.selected')
-                .classed('selected', false)
-                .transition()
-                .duration(sqZoomInDur)
-                .attr('x', d => squareXPos(d))
-                .attr('y', d => squareYPos(d))
-                .attr('width', sqDim)
-                .attr('height', sqDim)
-                .style('stroke', 'none');
-
+            clearBoxSelection();
+            redrawScatterPlot();
             // start selection
             inSelect = true;
             var coords = d3.mouse(this);
@@ -140,14 +147,14 @@ function squareplot() {
                     d3.select(this).classed('selected', false);
                 }
             });
+            highlightSelectedScatterPlot();
 
         }).on('mouseup', function() {
             inSelect = false;
-            console.log(d3.selectAll('.selected'));
         });
 
     // squares
-    plt
+    squares = plt
         .selectAll('rect')
         .data(sqDataset)
         .enter()
@@ -168,6 +175,29 @@ function squareplot() {
         .text(d => monthLabel(d))
         .attr('x', d => squareXPos(d))
         .attr('y', sqLabelSize);
+}
+
+function highlightSelectedScatterPlot() {
+
+    // x axis data map
+    let x = d3.scaleLinear()
+        .domain([lnMinDay, lnMaxDay])
+        .range([0, lnPltWidth]);
+
+    // y axis data map
+    let y = d3.scaleLinear()
+        .domain([d3.min(lnDataset, d => d[3]), d3.max(lnDataset, d => d[3])])
+        .range([lnPltHeight, 0]);
+
+    d3.selectAll('g circle')
+        .transition()
+        .duration(cirZoomInDur)
+        .style('fill', (d, i) => checkIfCircleSelected(d, i) ? "orange": "steelblue")
+        .attr('r', (d, i) => checkIfCircleSelected(d, i) ? cirZoomSize: cirSize);
+}
+
+function checkIfCircleSelected(d, i) {
+    return squares._groups[0][i].className.baseVal == 'selected';
 }
 
 function squareXPos(d) {
@@ -216,7 +246,7 @@ function monthLabel(d) {
     return d[5] == 8 ? months[d[4]-1] : '';
 }
 
-d3.selection.prototype.moveToFront = function() {  
+d3.selection.prototype.moveToFront = function() {
     return this.each(function(){
       this.parentNode.appendChild(this);
     });
@@ -236,15 +266,19 @@ function getLnStats() {
     lnPltHeight = sqPltHeight / 3
 }
 
-function lineplot() {
+function scatterplot() {
 
-    let plt = d3
-        .select('body')
+    d3.select('body')
         .append('svg')
         .attr('width', lnPltWidth)
         .attr('height', lnPltHeight)
-        .attr('align', 'center');
+        .attr('align', 'center')
+        .append('g')
+        .attr('id', 'scatter');
+    redrawScatterPlot();
+}
 
+function redrawScatterPlot() {
     // x axis data map
     let x = d3.scaleLinear()
         .domain([lnMinDay, lnMaxDay])
@@ -256,14 +290,14 @@ function lineplot() {
         .range([lnPltHeight, 0]);
 
     // path
-    plt
-        .append('path')
-        .datum(lnDataset)
-        .attr('fill', 'none')
-        .attr('stroke', 'steelblue')
-        .attr('stroke-width', 1.5)
-        .attr('d', d3.line()
-            .x(d => x(d[1] * 7 + d[2]))
-            .y(d => y(d[3])));
+    d3.selectAll("#scatter circle").remove();
+    d3.selectAll('#scatter')
+        .selectAll('dot')
+        .data(lnDataset)
+        .enter()
+        .append('circle')
+            .attr('cx', d => x(d[0]))
+            .attr('cy', d => y(d[3]))
+            .attr('r', cirSize)
+            .style('fill', 'steelblue');
 }
-
