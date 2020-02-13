@@ -1,8 +1,21 @@
 #title {
-    font-family: 'Playfair Display', serif;
-    font-weight: 800;
     text-align: left;
     margin: 0 auto;
+}
+
+#title>h1 {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 700;
+    font-size: 32pt;
+    margin-bottom: 0rem;
+}
+
+#title>p {
+    font-family: 'IBM Plex Serif', serif;
+    font-weight: 400;
+    font-style: italic;
+    font-size: 20pt;
+    margin-top: 0rem;
 }
 
 svg {
@@ -12,9 +25,14 @@ svg {
     margin-bottom: 20px;
 }
 
-svg>text {
-    font-family: 'Roboto', sans-serif;
-    font-weight: 400;
-    fill-opacity: 0.5;
+#squareplot>text {
+    font-family: 'IBM Plex Serif', serif;
+    font-weight: 200;
+    fill-opacity: 0.7;
     user-select: none;
+}
+
+#squareplot>.daylabel {
+    font-style: italic;
+    pointer-events: none;
 }

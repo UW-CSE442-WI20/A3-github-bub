@@ -6,7 +6,7 @@ let sqDataset = [];
 let lnDataset = sqDataset;
 
 d3.csv(events_per_day_2019, d => {
-    sqDataset.push([+d.day_of_year, +d.week_, +d.day_of_week, +d.event_count, +d.month_, +d.day_of_month, +d.quarter, +d.year]);
+    sqDataset.push([+d.day_of_year, +d.week_, +d.day_of_week, +d.event_count, +d.month_, +d.day_of_month, +d.quarter_, +d.year_]);
 }).then(d => {
     getSqStats();
     getLnStats();
@@ -34,11 +34,6 @@ function getSqStats() {
     sqMinMonth = d3.min(sqDataset, d => d[4]);
     sqMaxMonth = d3.max(sqDataset, d => d[4]);
 
-    console.log(sqMinWk);
-    console.log(sqMaxWk);
-    console.log(sqMinMonth);
-    console.log(sqMaxMonth);
-
     // square dimensions
     sqDim = 12
     sqPad = 4
@@ -50,9 +45,12 @@ function getSqStats() {
     sqZoomOutDur = sqZoomInDur
     // label properties
     sqLabelSize = sqDim
+    sqLabelFadeInDur = 200
+    sqLabelFadeOutDur = sqLabelFadeInDur
+    sqLabelOpacity = 0.6
     // square plot svg dimensions
-    sqPltWidth = sqPad + (sqDim + sqPad) * (sqN + sqMaxMonth - sqMinMonth + 1)  // 11 is no. months
-    sqPltHeight = sqPad + sqLabelSize + sqPad + (sqDim + sqPad) * sqM
+    sqPltWidth = sqPad + 3 * sqLabelSize + sqPad + (sqDim + sqPad) * (sqN + sqMaxMonth - sqMinMonth + 1);  // 11 is no. months
+    sqPltHeight = sqPad + sqLabelSize + sqPad + (sqDim + sqPad) * sqM + sqPad + sqLabelSize + sqPad;
 }
 
 var selectBoxX = -1;
@@ -63,7 +61,7 @@ var inSelect = false;
 function title() {
     d3
     .select('#title')
-    .style('width', sqPltWidth + 'px')
+    .style('width', sqPltWidth * 3 / 4 + 'px')
 }
 
 function squareplot() {
@@ -143,12 +141,16 @@ function squareplot() {
 
         }).on('mouseup', function() {
             inSelect = false;
-            console.log(d3.selectAll('.selected'));
         });
 
-    // squares
     plt
-        .selectAll('rect')
+        .append('text')
+        .classed('daylabel', true)
+        .attr('x', sqPad + sqPltWidth / 8)
+        .attr('y', sqPltHeight - sqPad)
+
+    // squares
+    plt.selectAll('rect')
         .data(sqDataset)
         .enter()
         .append('rect')
@@ -157,7 +159,20 @@ function squareplot() {
         .attr('width', sqDim)
         .attr('height', sqDim)
         .attr('fill', d => squareFill(d))
-        .on('click', d => console.log(d));
+        .on('click', d => console.log(d))
+        .on('mouseover', d => {
+            plt.select('.daylabel')
+                .transition()
+                .duration(sqLabelFadeInDur)
+                .style('fill-opacity', sqLabelOpacity)
+                .text(dayOfMonthLabel(d))
+        })
+        .on('mouseout', () => {
+            plt.select('.daylabel')
+                .transition()
+                .duration(sqLabelFadeOutDur)
+                .style('fill-opacity', 0)
+        })
 
     // month labels
     plt
@@ -165,13 +180,20 @@ function squareplot() {
         .data(sqDataset)
         .enter()
         .append('text')
-        .text(d => monthLabel(d))
+        .text(d => sqMonthLabel(d))
         .attr('x', d => squareXPos(d))
         .attr('y', sqLabelSize);
+   
+    plt
+        .append('text').text('Mon').attr('x', sqPad).attr('y', sqLabelSize + squareYPos([0, 0, 2, 0, 0, 0, 0, 0]));
+    plt
+        .append('text').text('Wed').attr('x', sqPad).attr('y', sqLabelSize + squareYPos([0, 0, 4, 0, 0, 0, 0, 0]));
+    plt
+        .append('text').text('Fri').attr('x', sqPad).attr('y', sqLabelSize + squareYPos([0, 0, 6, 0, 0, 0, 0, 0]));
 }
 
 function squareXPos(d) {
-    return sqPad + (d[1] - sqMinWk + d[4] - sqMinMonth) * (sqDim + sqPad);
+    return sqPad + 3 * sqLabelSize + sqPad + (d[1] - sqMinWk + d[4] - sqMinMonth) * (sqDim + sqPad);
 }
 
 function squareYPos(d) {
@@ -209,11 +231,17 @@ function squareFill(d) {
     return `rgb(${r}, ${g}, ${b})`;
 }
 
-function monthLabel(d) {
+const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
+function sqMonthLabel(d) {
     return d[5] == 8 ? months[d[4]-1] : '';
+}
+
+const daySuffix = ['st', 'nd', 'rd', 'th']
+
+function dayOfMonthLabel(d) {
+    // return d
+    return `${months[d[4] - 1]} ${d[5]}${(d[5] % 10 == 0) || (d[5] >= 11) && (d[5] <= 19) ? 'th' : daySuffix[Math.min(3, d[5] % 10 - 1)]} ${d[7]}`;
 }
 
 d3.selection.prototype.moveToFront = function() {  
@@ -225,6 +253,7 @@ d3.selection.prototype.moveToFront = function() {
 let lnMinDay, lnMaxDay;
 
 let lnPltWidth, lnPltHeight;
+let lnPltPad;
 
 function getLnStats() {
 
@@ -234,6 +263,8 @@ function getLnStats() {
     // line plot svg dimensions
     lnPltWidth = sqPltWidth
     lnPltHeight = sqPltHeight / 3
+
+    lnPltPad = sqPad
 }
 
 function lineplot() {
@@ -248,22 +279,21 @@ function lineplot() {
     // x axis data map
     let x = d3.scaleLinear()
         .domain([lnMinDay, lnMaxDay])
-        .range([0, lnPltWidth]);
+        .range([0 + lnPltPad, lnPltWidth - lnPltPad]);
 
     // y axis data map
     let y = d3.scaleLinear()
         .domain([d3.min(lnDataset, d => d[3]), d3.max(lnDataset, d => d[3])])
-        .range([lnPltHeight, 0]);
+        .range([lnPltHeight - lnPltPad, 0 + lnPltPad]);
 
-    // path
     plt
-        .append('path')
-        .datum(lnDataset)
-        .attr('fill', 'none')
-        .attr('stroke', 'steelblue')
-        .attr('stroke-width', 1.5)
-        .attr('d', d3.line()
-            .x(d => x(d[1] * 7 + d[2]))
-            .y(d => y(d[3])));
+        // .append('g')
+        .selectAll('circle')
+        .data(lnDataset)
+        .enter()
+        .append('circle')
+        .attr('cx', d => x(d[0]))
+        .attr('cy', d => y(d[3]))
+        .attr('r', 1.5)
+        .style('fill', 'steelblue')
 }
-
