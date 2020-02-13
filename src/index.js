@@ -2,11 +2,15 @@ const d3 = require('d3');
 const events_per_day_2019 = require('../queries/events_per_day_2019_org_union_sorted_day.csv');
 
 let sqDataset = [];
+let sqDatasetRepos = [];
+let sqDatasetUsernames = [];
 
 let lnDataset = sqDataset;
 
 d3.csv(events_per_day_2019, d => {
-    sqDataset.push([+d.day_of_year, +d.week_, +d.day_of_week, +d.event_count, +d.month_, +d.day_of_month, +d.quarter_, +d.year_, +d.org_ct, +d.ind_ct]);
+    sqDataset.push([+d.day_of_year, +d.week_, +d.day_of_week, +d.event_count, +d.month_, +d.day_of_month, +d.quarter_, +d.year_, +d.org_ct, +d.ind_ct, +d.repo_watch_event_count, +d.user_event_count]);
+    sqDatasetRepos.push(d.repo);
+    sqDatasetUsernames.push(d.username);
 }).then(d => {
     // preprocessing
     getSqStats();
@@ -19,8 +23,14 @@ d3.csv(events_per_day_2019, d => {
 
     // scatterplot();
 
-    statsTitle();
-    eventCountStats();
+    evtctStatsTitle();
+    evtctStats();
+
+    repoStatsTitle();
+    repoStats();
+
+    userStatsTitle();
+    userStats();
 });
 
 let sqMinEvtCt, sqMaxEvtCt;
@@ -98,16 +108,44 @@ function sqPltCaption() {
         below, according to the selected time range.')
 }
 
-function statsTitle() {
+function evtctStatsTitle() {
     title = d3
         .select('body')
         .append('div')
-        .attr('id', 'statsTitle')
+        .attr('class', 'statsTitle')
 
     title
         .style('width', sqPltWidth * 3 / 4 + 'px')
         .append('h2')
-        .text('Org-Owned Vs. Individual Repo Events')
+        .text('ORG-OWNED VS. INDIVIDUALLY-OWNED REPO EVENTS')
+}
+
+function repoStatsTitle() {
+    title = d3
+        .select('body')
+        .append('div')
+        .attr('class', 'statsTitle')
+        
+    title.append('hr')
+    
+    title
+        .style('width', sqPltWidth * 3 / 4 + 'px')
+        .append('h2')
+        .text('TOP REPO')
+}
+
+function userStatsTitle() {
+    title = d3
+        .select('body')
+        .append('div')
+        .attr('class', 'statsTitle')
+        
+    title.append('hr')
+    
+    title
+        .style('width', sqPltWidth * 3 / 4 + 'px')
+        .append('h2')
+        .text('TOP USER')
 }
 
 function clearBoxSelection() {
@@ -276,6 +314,8 @@ function addEvents() {
         d3.selectAll('.selecting').classed('selected', true).classed('selecting', false);
         inSelect = false;
         redrawEventCountStats();
+        redrawRepoStats();
+        redrawUserStats();
     });
 }
 
@@ -397,7 +437,7 @@ let org_ct, ind_ct;
 
 let tot_glob_ct, org_glob_ct, ind_glob_ct
 
-function eventCountStats() {
+function evtctStats() {
 
     tot_glob_ct = d3.mean(sqDataset, d => d[3])
     org_glob_ct = d3.mean(sqDataset, d => d[8])
@@ -564,3 +604,98 @@ function redrawEventCountStats() {
 }
 
 format = d3.format(".3s")
+
+let maxRepoCtGlob, maxRepoGlob;
+
+function repoStats() {
+
+    maxRepoCtGlob = d3.max(sqDataset, d => d[10])
+    maxRepoGlob = sqDatasetRepos[d3.maxIndex(sqDataset, d => d[10])]
+
+    let div = d3
+        .select('body')
+        .append('div')
+        .attr('id', 'repostats')
+        .style('width', barWidth + 'px')
+
+    div.append('a')
+    div.append('p')
+
+    redrawRepoStats();
+}
+
+function redrawRepoStats() {
+
+    let maxRepoCt, maxRepo;
+
+    if (d3.selectAll('.selected')._groups[0].length == 0) {
+        // global average
+        maxRepoCt = maxRepoCtGlob;
+        maxRepo = maxRepoGlob;
+    } else {
+        // selected average
+        maxRepoCt = d3.max(d3.selectAll('.selected').data(), d => d[10]);
+        maxRepo = sqDatasetRepos[sqindexof(maxRepoCt, 10)];
+    }
+
+    d3
+        .select('#repostats>a')
+        .attr('href', 'https://www.github.com/' + maxRepo)
+        .text(maxRepo);
+
+    d3
+        .select('#repostats>p')
+        .text(`${format(maxRepoCt)} stars`);
+}
+
+let maxUserCtGlob, maxUserGlob;
+
+function userStats() {
+
+    maxUserCtGlob = d3.max(sqDataset, d => d[11])
+    maxUserGlob = sqDatasetUsernames[d3.maxIndex(sqDataset, d => d[11])]
+
+    let div = d3
+        .select('body')
+        .append('div')
+        .attr('id', 'userstats')
+        .style('width', barWidth + 'px')
+
+    div.append('a')
+    div.append('p')
+
+    redrawUserStats();
+}
+
+function redrawUserStats() {
+
+    let maxUserCt, maxUser;
+
+    if (d3.selectAll('.selected')._groups[0].length == 0) {
+        // global average
+        maxUserCt = maxUserCtGlob;
+        maxUser = maxUserGlob;
+    } else {
+        // selected average
+        maxUserCt = d3.max(d3.selectAll('.selected').data(), d => d[11]);
+        maxUser = sqDatasetUsernames[sqindexof(maxUserCt, 11)];
+    }
+
+    d3
+        .select('#userstats>a')
+        .attr('href', 'https://www.github.com/' + maxUser)
+        .text(maxUser);
+
+    d3
+        .select('#userstats>p')
+        .text(`${format(maxUserCt)} commit comments`);
+}
+
+function sqindexof(d, k) {
+    for (let i = 0; i < sqDataset.length; ++i) {
+        if (sqDataset[i][k] == d) {
+            return i;
+        }
+    }
+    return -1;
+}

@@ -1,4 +1,4 @@
-#title,#statsTitle {
+#title,.statsTitle {
     text-align: left;
     margin: 0 auto;
 }
@@ -18,12 +18,12 @@
     margin-top: 0rem;
 }
 
-#statsTitle>h2 {
+.statsTitle>h2 {
     font-family: 'IBM Plex Serif', serif;
-    font-weight: 400;
-    font-size: 20pt;
+    font-weight: 700;
+    font-size: 12pt;
     margin-top: 0rem;
-    margin-bottom: 10pt;
+    margin-bottom: 5pt;
 }
 
 #squareplot {
@@ -61,6 +61,7 @@
     display: block;
     margin-left: auto;
     margin-right: auto;
+    margin-bottom: 20px;
 }
 
 #eventcountstats text {
@@ -80,4 +81,31 @@
 #org_pct,#ind_pct {
     font-family: 'IBM Plex Serif', serif;
     font-weight: 400;
+}
+
+#repostats,#userstats {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#repostats>a,#repostats>a:visited,#userstats>a,#userstats>a:visited {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 400;
+    font-style: italic;
+    font-size: 24pt;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 0;
+    text-decoration: none;
+    color: black;
+}
+
+#repostats>p,#userstats>p {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 400;
+    margin-top: 0;
+}
+
+hr {
+    border: 1px solid lightgray;
 }
